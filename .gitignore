@@ -1,0 +1,15 @@
+# Virtual Environment
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
+venv/
+env/
+
+# Database SQLite
+*.db
+*.sqlite3
+
+# Python Cache
+__pycache__/
+*.pyc
