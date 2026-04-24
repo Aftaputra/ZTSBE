@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 # ========== Kandang ==========
 class KandangBase(BaseModel):
@@ -50,7 +50,7 @@ class ActuatorPatch(BaseModel):
     mode: Optional[str] = None
 
 class ActuatorModeSwitch(BaseModel):
-    mode: str  # 'manual', 'intermittent', 'otomatis_suhu'
+    mode: Literal["manual", "intermittent", "otomatis_suhu"]
 
 # ========== Blower Config ==========
 class BlowerConfigBase(BaseModel):

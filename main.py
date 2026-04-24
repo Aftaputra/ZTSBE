@@ -6,9 +6,12 @@ from sqlalchemy.orm import Session
 from typing import List
 import uuid
 import asyncio
+import logging
 import os
 import uvicorn
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from database import engine, Base, SessionLocal, get_db, create_sqlite_triggers
 from database import Kandang, Lantai, Actuator, BlowerConfig, PumpConfig, DimmerConfig, HeaterConfig, ConfigAuditLog
@@ -24,7 +27,7 @@ async def modbus_polling_task():
         try:
             await modbus_service.poll_and_sync(SessionLocal)
         except Exception as e:
-            print(f"[Modbus polling error] {e}")
+            logger.error(f"Modbus polling error: {e}")
         await asyncio.sleep(5)
 
 # ========== LIFESPAN ==========
