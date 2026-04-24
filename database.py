@@ -41,10 +41,11 @@ class Actuator(Base):
     lantai_id = Column(Integer, ForeignKey("lantai.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # 'blower', 'pump', 'dimmer', 'heater'
-    mode = Column(String, nullable=True)
+    mode = Column(String, nullable=True)   # 'manual', 'intermittent', 'otomatis_suhu'
     current_status = Column(Boolean, default=False)
     current_value = Column(Float, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_sync = Column(DateTime, nullable=True)
 
     lantai = relationship("Lantai", back_populates="actuators")
     blower_config = relationship("BlowerConfig", uselist=False, back_populates="actuator", cascade="all, delete-orphan")
@@ -55,34 +56,36 @@ class Actuator(Base):
 class BlowerConfig(Base):
     __tablename__ = "blower_config"
     actuator_id = Column(String, ForeignKey("actuator.uuid", ondelete="CASCADE"), primary_key=True)
-    interval_on_duration = Column(Integer)
-    interval_off_duration = Column(Integer)
-    min_temperature = Column(Float)
-    max_temperature = Column(Float)
+    mode = Column(String, nullable=True)             # 'manual', 'intermittent', 'otomatis_suhu'
+    interval_on_duration = Column(Integer, nullable=True)
+    interval_off_duration = Column(Integer, nullable=True)
+    min_temperature = Column(Float, nullable=True)
+    max_temperature = Column(Float, nullable=True)
 
     actuator = relationship("Actuator", back_populates="blower_config")
 
 class PumpConfig(Base):
     __tablename__ = "pump_config"
     actuator_id = Column(String, ForeignKey("actuator.uuid", ondelete="CASCADE"), primary_key=True)
-    interval_on_duration = Column(Integer)
-    interval_off_duration = Column(Integer)
+    mode = Column(String, nullable=True)             # 'manual', 'otomatis_suhu'
+    min_temperature = Column(Float, nullable=True)
+    max_temperature = Column(Float, nullable=True)
 
     actuator = relationship("Actuator", back_populates="pump_config")
 
 class DimmerConfig(Base):
     __tablename__ = "dimmer_config"
     actuator_id = Column(String, ForeignKey("actuator.uuid", ondelete="CASCADE"), primary_key=True)
-    min_brightness = Column(Integer)
-    max_brightness = Column(Integer)
+    # Dimmer only supports manual mode; brightness controlled via current_value on Actuator
 
     actuator = relationship("Actuator", back_populates="dimmer_config")
 
 class HeaterConfig(Base):
     __tablename__ = "heater_config"
     actuator_id = Column(String, ForeignKey("actuator.uuid", ondelete="CASCADE"), primary_key=True)
-    min_temperature = Column(Float)
-    max_temperature = Column(Float)
+    mode = Column(String, nullable=True)             # 'manual', 'otomatis_suhu'
+    min_temperature = Column(Float, nullable=True)
+    max_temperature = Column(Float, nullable=True)
 
     actuator = relationship("Actuator", back_populates="heater_config")
 
@@ -113,20 +116,34 @@ def create_sqlite_triggers():
         AFTER UPDATE ON blower_config
         BEGIN
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
+            SELECT NEW.actuator_id, 'mode', OLD.mode, NEW.mode, CURRENT_TIMESTAMP
+            WHERE (OLD.mode IS NULL AND NEW.mode IS NOT NULL)
+               OR (OLD.mode IS NOT NULL AND NEW.mode IS NULL)
+               OR (OLD.mode != NEW.mode);
+
+            INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'interval_on_duration', CAST(OLD.interval_on_duration AS TEXT), CAST(NEW.interval_on_duration AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.interval_on_duration != OLD.interval_on_duration;
+            WHERE (OLD.interval_on_duration IS NULL AND NEW.interval_on_duration IS NOT NULL)
+               OR (OLD.interval_on_duration IS NOT NULL AND NEW.interval_on_duration IS NULL)
+               OR (OLD.interval_on_duration != NEW.interval_on_duration);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'interval_off_duration', CAST(OLD.interval_off_duration AS TEXT), CAST(NEW.interval_off_duration AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.interval_off_duration != OLD.interval_off_duration;
+            WHERE (OLD.interval_off_duration IS NULL AND NEW.interval_off_duration IS NOT NULL)
+               OR (OLD.interval_off_duration IS NOT NULL AND NEW.interval_off_duration IS NULL)
+               OR (OLD.interval_off_duration != NEW.interval_off_duration);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'min_temperature', CAST(OLD.min_temperature AS TEXT), CAST(NEW.min_temperature AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.min_temperature != OLD.min_temperature;
+            WHERE (OLD.min_temperature IS NULL AND NEW.min_temperature IS NOT NULL)
+               OR (OLD.min_temperature IS NOT NULL AND NEW.min_temperature IS NULL)
+               OR (OLD.min_temperature != NEW.min_temperature);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'max_temperature', CAST(OLD.max_temperature AS TEXT), CAST(NEW.max_temperature AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.max_temperature != OLD.max_temperature;
+            WHERE (OLD.max_temperature IS NULL AND NEW.max_temperature IS NOT NULL)
+               OR (OLD.max_temperature IS NOT NULL AND NEW.max_temperature IS NULL)
+               OR (OLD.max_temperature != NEW.max_temperature);
         END;
         """,
 
@@ -135,26 +152,22 @@ def create_sqlite_triggers():
         AFTER UPDATE ON pump_config
         BEGIN
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
-            SELECT NEW.actuator_id, 'interval_on_duration', CAST(OLD.interval_on_duration AS TEXT), CAST(NEW.interval_on_duration AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.interval_on_duration != OLD.interval_on_duration;
+            SELECT NEW.actuator_id, 'mode', OLD.mode, NEW.mode, CURRENT_TIMESTAMP
+            WHERE (OLD.mode IS NULL AND NEW.mode IS NOT NULL)
+               OR (OLD.mode IS NOT NULL AND NEW.mode IS NULL)
+               OR (OLD.mode != NEW.mode);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
-            SELECT NEW.actuator_id, 'interval_off_duration', CAST(OLD.interval_off_duration AS TEXT), CAST(NEW.interval_off_duration AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.interval_off_duration != OLD.interval_off_duration;
-        END;
-        """,
-
-        """
-        CREATE TRIGGER trigger_audit_dimmer
-        AFTER UPDATE ON dimmer_config
-        BEGIN
-            INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
-            SELECT NEW.actuator_id, 'min_brightness', CAST(OLD.min_brightness AS TEXT), CAST(NEW.min_brightness AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.min_brightness != OLD.min_brightness;
+            SELECT NEW.actuator_id, 'min_temperature', CAST(OLD.min_temperature AS TEXT), CAST(NEW.min_temperature AS TEXT), CURRENT_TIMESTAMP
+            WHERE (OLD.min_temperature IS NULL AND NEW.min_temperature IS NOT NULL)
+               OR (OLD.min_temperature IS NOT NULL AND NEW.min_temperature IS NULL)
+               OR (OLD.min_temperature != NEW.min_temperature);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
-            SELECT NEW.actuator_id, 'max_brightness', CAST(OLD.max_brightness AS TEXT), CAST(NEW.max_brightness AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.max_brightness != OLD.max_brightness;
+            SELECT NEW.actuator_id, 'max_temperature', CAST(OLD.max_temperature AS TEXT), CAST(NEW.max_temperature AS TEXT), CURRENT_TIMESTAMP
+            WHERE (OLD.max_temperature IS NULL AND NEW.max_temperature IS NOT NULL)
+               OR (OLD.max_temperature IS NOT NULL AND NEW.max_temperature IS NULL)
+               OR (OLD.max_temperature != NEW.max_temperature);
         END;
         """,
 
@@ -163,12 +176,22 @@ def create_sqlite_triggers():
         AFTER UPDATE ON heater_config
         BEGIN
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
+            SELECT NEW.actuator_id, 'mode', OLD.mode, NEW.mode, CURRENT_TIMESTAMP
+            WHERE (OLD.mode IS NULL AND NEW.mode IS NOT NULL)
+               OR (OLD.mode IS NOT NULL AND NEW.mode IS NULL)
+               OR (OLD.mode != NEW.mode);
+
+            INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'min_temperature', CAST(OLD.min_temperature AS TEXT), CAST(NEW.min_temperature AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.min_temperature != OLD.min_temperature;
+            WHERE (OLD.min_temperature IS NULL AND NEW.min_temperature IS NOT NULL)
+               OR (OLD.min_temperature IS NOT NULL AND NEW.min_temperature IS NULL)
+               OR (OLD.min_temperature != NEW.min_temperature);
 
             INSERT INTO config_audit_log (actuator_id, parameter_yang_diubah, nilai_lama, nilai_baru, waktu_perubahan)
             SELECT NEW.actuator_id, 'max_temperature', CAST(OLD.max_temperature AS TEXT), CAST(NEW.max_temperature AS TEXT), CURRENT_TIMESTAMP
-            WHERE NEW.max_temperature != OLD.max_temperature;
+            WHERE (OLD.max_temperature IS NULL AND NEW.max_temperature IS NOT NULL)
+               OR (OLD.max_temperature IS NOT NULL AND NEW.max_temperature IS NULL)
+               OR (OLD.max_temperature != NEW.max_temperature);
         END;
         """
     ]
