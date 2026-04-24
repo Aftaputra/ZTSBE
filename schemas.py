@@ -1,76 +1,108 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
-class LogResponse(BaseModel):
+# ========== Kandang ==========
+class KandangBase(BaseModel):
+    nama: str
+    lokasi: Optional[str] = None
+
+class KandangCreate(KandangBase):
+    pass
+
+class KandangResponse(KandangBase):
     id: int
-    actuator_id: str
-    parameter_yang_diubah: str
-    nilai_lama: str
-    nilai_baru: str
-    timestamp: datetime
     model_config = ConfigDict(from_attributes=True)
 
-# Blower Schemas
-class BlowerUpdate(BaseModel):
+# ========== Lantai ==========
+class LantaiBase(BaseModel):
+    kandang_id: int
+    nama: str
+
+class LantaiCreate(LantaiBase):
+    pass
+
+class LantaiResponse(LantaiBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+# ========== Actuator ==========
+class ActuatorBase(BaseModel):
+    lantai_id: int
+    name: str
+    type: str
+    mode: Optional[str] = None
+    current_status: Optional[bool] = False
+    current_value: Optional[float] = None
+
+class ActuatorCreate(ActuatorBase):
+    pass
+
+class ActuatorResponse(ActuatorBase):
+    uuid: str
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ActuatorPatch(BaseModel):
+    current_status: Optional[bool] = None
+    current_value: Optional[float] = None
+
+# ========== Blower Config ==========
+class BlowerConfigBase(BaseModel):
     interval_on_duration: int
     interval_off_duration: int
     min_temperature: float
     max_temperature: float
 
-class BlowerResponse(BlowerUpdate):
+class BlowerConfigCreate(BlowerConfigBase):
+    actuator_id: str
+
+class BlowerConfigResponse(BlowerConfigBase):
     actuator_id: str
     model_config = ConfigDict(from_attributes=True)
 
-class BlowerCreate(BaseModel):
-    actuator_id: str
-    interval_on_duration: int = 10
-    interval_off_duration: int = 5
-    min_temperature: float = 25.0
-    max_temperature: float = 30.0
-
-# Pump Schemas
-class PumpUpdate(BaseModel):
+# ========== Pump Config ==========
+class PumpConfigBase(BaseModel):
     interval_on_duration: int
     interval_off_duration: int
 
-class PumpResponse(PumpUpdate):
+class PumpConfigCreate(PumpConfigBase):
+    actuator_id: str
+
+class PumpConfigResponse(PumpConfigBase):
     actuator_id: str
     model_config = ConfigDict(from_attributes=True)
 
-class PumpCreate(BaseModel):
-    actuator_id: str
-    interval_on_duration: int = 8
-    interval_off_duration: int = 4
-
-# Dimmer Schemas
-class DimmerUpdate(BaseModel):
+# ========== Dimmer Config ==========
+class DimmerConfigBase(BaseModel):
     min_brightness: int
     max_brightness: int
 
-class DimmerResponse(DimmerUpdate):
+class DimmerConfigCreate(DimmerConfigBase):
+    actuator_id: str
+
+class DimmerConfigResponse(DimmerConfigBase):
     actuator_id: str
     model_config = ConfigDict(from_attributes=True)
 
-class DimmerCreate(BaseModel):
-    actuator_id: str
-    min_brightness: int = 0
-    max_brightness: int = 100
-
-# Heater Schemas
-class HeaterUpdate(BaseModel):
+# ========== Heater Config ==========
+class HeaterConfigBase(BaseModel):
     min_temperature: float
     max_temperature: float
 
-class HeaterResponse(HeaterUpdate):
+class HeaterConfigCreate(HeaterConfigBase):
+    actuator_id: str
+
+class HeaterConfigResponse(HeaterConfigBase):
     actuator_id: str
     model_config = ConfigDict(from_attributes=True)
 
-class HeaterCreate(BaseModel):
+# ========== Audit Log ==========
+class AuditLogResponse(BaseModel):
+    id_log: int
     actuator_id: str
-    min_temperature: float = 20.0
-    max_temperature: float = 35.0
-
-# Device Type Enum
-class DeviceType(BaseModel):
-    type: str  # blower, pump, dimmer, heater
+    parameter_yang_diubah: str
+    nilai_lama: Optional[str]
+    nilai_baru: Optional[str]
+    waktu_perubahan: datetime
+    model_config = ConfigDict(from_attributes=True)

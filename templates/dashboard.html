@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Control Panel</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:#fff;color:#000;padding:20px}
+        .container{max-width:1400px;margin:0 auto}
+        h1{font-size:1.8rem;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:10px}
+        h2{font-size:1.2rem;margin-bottom:15px;border-left:3px solid #000;padding-left:10px}
+        .grid-2{display:grid;grid-template-columns:1fr 2fr;gap:20px}
+        .section{margin-bottom:30px;border:1px solid #ccc;padding:15px;background:#fefefe}
+        .section h3{font-size:1rem;margin-bottom:12px;font-weight:600}
+        .flex-row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end}
+        .form-group{margin-bottom:10px}
+        .form-group label{display:block;font-size:0.75rem;font-weight:600;color:#333}
+        .form-group small{font-size:0.7rem;color:#666;display:block}
+        input,select{padding:6px;border:1px solid #ccc;font-size:0.9rem;width:200px}
+        button{background:#fff;border:1px solid #000;padding:6px 12px;cursor:pointer;font-size:0.8rem}
+        button:hover{background:#000;color:#fff}
+        .card{border:1px solid #ccc;padding:15px;margin-bottom:20px;background:#fff}
+        .card-header{display:flex;justify-content:space-between;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}
+        .card-title{font-weight:600}
+        .delete-btn{background:#fff;border:1px solid #d00;color:#d00;padding:2px 8px}
+        .delete-btn:hover{background:#d00;color:#fff}
+        .status-badge{display:inline-block;padding:2px 6px;background:#eee;border:1px solid #ccc;font-size:0.75rem}
+        form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px}
+        .inline-form{display:inline-flex;gap:5px;align-items:center;margin:8px 0}
+        .logs-table{width:100%;border-collapse:collapse}
+        .logs-table th,.logs-table td{border-bottom:1px solid #ccc;padding:8px;text-align:left;font-size:0.8rem}
+        .logs-table th{background:#f0f0f0}
+        .filter-bar{margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap}
+        .filter-btn{background:#fff;border:1px solid #ccc}
+        .filter-btn.active{background:#000;color:#fff;border-color:#000}
+        .refresh-btn{margin-left:auto}
+        hr{margin:15px 0}
+        @media (max-width: 800px){ .grid-2{grid-template-columns:1fr} }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="icon ion-android-options"></i> IoT Control Panel</h1>
+    
+    <div class="grid-2">
+        <!-- Kolom KIRI: Manajemen -->
+        <div>
+            <div class="section">
+                <h3><i class="icon ion-home"></i> Tambah Kandang</h3>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Nama Kandang</label>
+                        <input type="text" id="kandang_nama" placeholder="contoh: Kandang A">
+                        <small>Nama unik kandang</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Lokasi</label>
+                        <input type="text" id="kandang_lokasi" placeholder="contoh: Blok Timur">
+                        <small>Lokasi / blok</small>
+                    </div>
+                    <button id="btnAddKandang">Tambah Kandang</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3><i class="icon ion-android-list"></i> Tambah Lantai</h3>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Pilih Kandang</label>
+                        <select id="lantai_kandang_id"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Lantai</label>
+                        <input type="text" id="lantai_nama" placeholder="contoh: Lantai 2">
+                        <small>Nama atau nomor lantai</small>
+                    </div>
+                    <button id="btnAddLantai">Tambah Lantai</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3><i class="icon ion-android-add"></i> Tambah Aktuator</h3>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label>Pilih Lantai</label>
+                        <select id="actuator_lantai_id"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Device</label>
+                        <input type="text" id="actuator_name" placeholder="contoh: Blower Utama">
+                        <small>Nama unik aktuator</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipe Aktuator</label>
+                        <select id="actuator_type">
+                            <option value="blower">Blower (kipas)</option>
+                            <option value="pump">Pump (pompa)</option>
+                            <option value="dimmer">Dimmer (lampu)</option>
+                            <option value="heater">Heater (pemanas)</option>
+                        </select>
+                    </div>
+                    <button id="btnAddActuator">Tambah Aktuator</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Kolom KANAN: Panduan -->
+        <div>
+            <div class="section">
+                <h3><i class="icon ion-information-circled"></i> Panduan</h3>
+                <ul style="margin-left:20px;font-size:0.8rem">
+                    <li><strong>Status ON/OFF</strong> : Nyalakan/matikan device</li>
+                    <li><strong>Set Value</strong> : Atur nilai operasi (misal: kecepatan 0-100)</li>
+                    <li><strong>Update Config</strong> : Ubah parameter threshold (suhu, interval, brightness)</li>
+                    <li><strong>Delete</strong> : Hapus device, lantai, atau kandang (beserta isinya)</li>
+                </ul>
+                <hr>
+                <div><i class="icon ion-clock"></i> Perubahan konfigurasi otomatis tercatat di Audit Log.</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AREA KONTROL & KONFIGURASI -->
+    <div class="section">
+        <h3><i class="icon ion-gear-a"></i> Kontrol & Threshold Aktuator</h3>
+        <div id="hierarchy">Memuat data...</div>
+    </div>
+    
+    <!-- AREA AUDIT LOG -->
+    <div class="section">
+        <h3><i class="icon ion-document-text"></i> Audit Log</h3>
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">Semua</button>
+            <button class="filter-btn" data-filter="blower">Blower</button>
+            <button class="filter-btn" data-filter="pump">Pump</button>
+            <button class="filter-btn" data-filter="dimmer">Dimmer</button>
+            <button class="filter-btn" data-filter="heater">Heater</button>
+            <button id="refreshLogsBtn" class="refresh-btn btn"><i class="icon ion-refresh"></i> Refresh</button>
+        </div>
+        <div id="logs" style="overflow-x:auto">Memuat log...</div>
+    </div>
+</div>
+
+<script>
+    // Helper functions
+    async function fetchJSON(url) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    }
+    async function postJSON(url, data) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.ok;
+    }
+    async function putJSON(url, data) {
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.ok;
+    }
+    async function patchJSON(url, data) {
+        const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.ok;
+    }
+    async function deleteReq(url) {
+        const res = await fetch(url, { method: 'DELETE' });
+        return res.ok;
+    }
+
+    // Load options for dropdowns
+async function loadOptions() {
+    try {
+        const [kandangs, lantais] = await Promise.all([
+            fetchJSON('/kandang/'),
+            fetchJSON('/lantai/')
+        ]);
+        const kandangSelect = document.getElementById('lantai_kandang_id');
+        kandangSelect.innerHTML = '<option value="">Pilih Kandang</option>';
+        kandangs.forEach(k => {
+            kandangSelect.innerHTML += `<option value="${k.id}">${escapeHtml(k.nama)}</option>`;
+        });
+        
+        // BAGIAN INI YANG DIPERBAIKI
+        const lantaiSelect = document.getElementById('actuator_lantai_id');
+        lantaiSelect.innerHTML = '<option value="">Pilih Lantai</option>';
+        lantais.forEach(l => {
+            // Cari nama kandang dari array kandangs
+            const kandang = kandangs.find(k => k.id === l.kandang_id);
+            const kandangNama = kandang ? escapeHtml(kandang.nama) : 'Unknown';
+            lantaiSelect.innerHTML += `<option value="${l.id}">${escapeHtml(l.nama)} (${kandangNama})</option>`;
+        });
+    } catch (err) {
+        console.error('loadOptions error:', err);
+    }
+}
+    // Escape HTML to prevent XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Load hierarchy (devices with controls)
+    async function loadHierarchy() {
+        try {
+            const data = await fetchJSON('/hierarchy/');
+            let html = '';
+            for (const k of data) {
+                html += `<div class="card"><div class="card-header"><span class="card-title"><i class="icon ion-home"></i> Kandang: ${escapeHtml(k.nama)} (${escapeHtml(k.lokasi||'-')})</span><button class="delete-btn" onclick="deleteKandang(${k.id})">Hapus Kandang</button></div>`;
+                for (const l of k.lantai) {
+                    html += `<div style="margin-left:20px;margin-top:10px;border-left:2px solid #ccc;padding-left:10px;"><div class="card-header"><span><i class="icon ion-android-list"></i> Lantai: ${escapeHtml(l.nama)}</span><button class="delete-btn" onclick="deleteLantai(${l.id})">Hapus Lantai</button></div>`;
+                    for (const a of l.actuators) {
+                        html += `<div style="margin-left:20px;margin-top:8px;border:1px solid #eee;padding:8px;">`;
+                        html += `<div><strong>${escapeHtml(a.name)}</strong> (${a.type}) - Status: <span id="status-${a.uuid}" class="status-badge">${a.current_status?'ON':'OFF'}</span> &nbsp; Value: <span id="value-${a.uuid}">${a.current_value??'-'}</span></div>`;
+                        // Status & value controls
+                        html += `<div class="inline-form">
+                            <button onclick="toggleStatus('${a.uuid}', ${!a.current_status})"><i class="icon ion-power"></i> Toggle ON/OFF</button>
+                            <input type="number" id="val-${a.uuid}" placeholder="Nilai baru" step="any" style="width:100px">
+                            <button onclick="updateValue('${a.uuid}')">Set Value</button>
+                        </div>`;
+                        // Config form based on type
+                        if (a.type === 'blower') {
+                            html += `<form class="config-form" data-type="blower" data-uuid="${a.uuid}">
+                                <div class="form-group"><label>Interval ON (detik)</label><input type="number" name="interval_on_duration" value="${a.config.interval_on_duration||''}" style="width:100px" placeholder="detik"></div>
+                                <div class="form-group"><label>Interval OFF (detik)</label><input type="number" name="interval_off_duration" value="${a.config.interval_off_duration||''}" style="width:100px"></div>
+                                <div class="form-group"><label>Min Suhu (°C)</label><input type="number" step="0.1" name="min_temperature" value="${a.config.min_temperature||''}" style="width:100px"></div>
+                                <div class="form-group"><label>Max Suhu (°C)</label><input type="number" step="0.1" name="max_temperature" value="${a.config.max_temperature||''}" style="width:100px"></div>
+                                <button type="submit">Update Threshold</button>
+                            </form>`;
+                        } else if (a.type === 'pump') {
+                            html += `<form class="config-form" data-type="pump" data-uuid="${a.uuid}">
+                                <div class="form-group"><label>Interval ON (detik)</label><input type="number" name="interval_on_duration" value="${a.config.interval_on_duration||''}" style="width:100px"></div>
+                                <div class="form-group"><label>Interval OFF (detik)</label><input type="number" name="interval_off_duration" value="${a.config.interval_off_duration||''}" style="width:100px"></div>
+                                <button type="submit">Update Interval</button>
+                            </form>`;
+                        } else if (a.type === 'dimmer') {
+                            html += `<form class="config-form" data-type="dimmer" data-uuid="${a.uuid}">
+                                <div class="form-group"><label>Min Brightness</label><input type="number" name="min_brightness" value="${a.config.min_brightness||''}" style="width:100px" placeholder="0-100"></div>
+                                <div class="form-group"><label>Max Brightness</label><input type="number" name="max_brightness" value="${a.config.max_brightness||''}" style="width:100px" placeholder="0-100"></div>
+                                <button type="submit">Update Brightness</button>
+                            </form>`;
+                        } else if (a.type === 'heater') {
+                            html += `<form class="config-form" data-type="heater" data-uuid="${a.uuid}">
+                                <div class="form-group"><label>Min Suhu (°C)</label><input type="number" step="0.1" name="min_temperature" value="${a.config.min_temperature||''}" style="width:100px"></div>
+                                <div class="form-group"><label>Max Suhu (°C)</label><input type="number" step="0.1" name="max_temperature" value="${a.config.max_temperature||''}" style="width:100px"></div>
+                                <button type="submit">Update Threshold</button>
+                            </form>`;
+                        }
+                        html += `<button class="delete-btn" style="margin-top:8px;" onclick="deleteActuator('${a.uuid}')">Hapus Aktuator</button>`;
+                        html += `</div>`;
+                    }
+                    html += `</div>`;
+                }
+                html += `</div>`;
+            }
+            if (data.length === 0) html = '<p>Belum ada kandang. Silakan tambah kandang terlebih dahulu.</p>';
+            document.getElementById('hierarchy').innerHTML = html;
+            // Attach event listeners to config forms (since they are dynamic)
+            document.querySelectorAll('.config-form').forEach(form => {
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const type = form.getAttribute('data-type');
+                    const uuid = form.getAttribute('data-uuid');
+                    const fd = new FormData(form);
+                    const data = {};
+                    fd.forEach((v, k) => { data[k] = isNaN(v) ? v : parseFloat(v); });
+                    const ok = await putJSON(`/${type}/${uuid}`, data);
+                    if (ok) {
+                        alert('Konfigurasi berhasil diupdate');
+                        await loadHierarchy();  // refresh tampilan
+                        await refreshLogs();    // refresh log
+                    } else {
+                        alert('Gagal update konfigurasi');
+                    }
+                };
+            });
+        } catch (err) {
+            console.error('loadHierarchy error:', err);
+            document.getElementById('hierarchy').innerHTML = '<p>Error memuat data. Cek koneksi atau lihat console.</p>';
+        }
+    }
+
+    // Toggle status
+    window.toggleStatus = async function(uuid, newStatus) {
+        const ok = await patchJSON(`/actuator/${uuid}`, { current_status: newStatus });
+        if (ok) {
+            document.getElementById(`status-${uuid}`).innerText = newStatus ? 'ON' : 'OFF';
+        } else {
+            alert('Gagal update status');
+        }
+    };
+
+    window.updateValue = async function(uuid) {
+        const input = document.getElementById(`val-${uuid}`);
+        const val = input.value;
+        if (val === '') return;
+        const ok = await patchJSON(`/actuator/${uuid}`, { current_value: parseFloat(val) });
+        if (ok) {
+            document.getElementById(`value-${uuid}`).innerText = val;
+            input.value = '';
+        } else {
+            alert('Gagal update value');
+        }
+    };
+
+    // CRUD functions
+    window.addKandang = async function() {
+        const nama = document.getElementById('kandang_nama').value.trim();
+        const lokasi = document.getElementById('kandang_lokasi').value.trim();
+        if (!nama) return alert('Nama kandang harus diisi');
+        const ok = await postJSON('/kandang/', { nama, lokasi });
+        if (ok) {
+            alert('Kandang ditambahkan');
+            document.getElementById('kandang_nama').value = '';
+            document.getElementById('kandang_lokasi').value = '';
+            await loadOptions();
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal menambahkan kandang');
+        }
+    };
+
+    window.addLantai = async function() {
+        const kandang_id = document.getElementById('lantai_kandang_id').value;
+        const nama = document.getElementById('lantai_nama').value.trim();
+        if (!kandang_id || !nama) return alert('Pilih kandang dan isi nama lantai');
+        const ok = await postJSON('/lantai/', { kandang_id: parseInt(kandang_id), nama });
+        if (ok) {
+            alert('Lantai ditambahkan');
+            document.getElementById('lantai_nama').value = '';
+            await loadOptions();
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal menambahkan lantai');
+        }
+    };
+
+    window.addActuator = async function() {
+        const lantai_id = document.getElementById('actuator_lantai_id').value;
+        const name = document.getElementById('actuator_name').value.trim();
+        const type = document.getElementById('actuator_type').value;
+        if (!lantai_id || !name) return alert('Pilih lantai dan isi nama device');
+        const ok = await postJSON('/actuator/', { lantai_id: parseInt(lantai_id), name, type });
+        if (ok) {
+            alert('Aktuator ditambahkan');
+            document.getElementById('actuator_name').value = '';
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal menambahkan aktuator');
+        }
+    };
+
+    window.deleteKandang = async function(id) {
+        if (!confirm('Hapus kandang dan semua isinya?')) return;
+        const ok = await deleteReq(`/kandang/${id}`);
+        if (ok) {
+            await loadOptions();
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal hapus kandang');
+        }
+    };
+
+    window.deleteLantai = async function(id) {
+        if (!confirm('Hapus lantai dan semua aktuator di dalamnya?')) return;
+        const ok = await deleteReq(`/lantai/${id}`);
+        if (ok) {
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal hapus lantai');
+        }
+    };
+
+    window.deleteActuator = async function(uuid) {
+        if (!confirm('Hapus aktuator ini?')) return;
+        const ok = await deleteReq(`/actuator/${uuid}`);
+        if (ok) {
+            await loadHierarchy();
+            await refreshLogs();
+        } else {
+            alert('Gagal hapus aktuator');
+        }
+    };
+
+    // Audit log functions
+    async function refreshLogs() {
+        const activeFilter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+        await loadLogs(activeFilter);
+    }
+
+    async function loadLogs(filter) {
+        const logsDiv = document.getElementById('logs');
+        logsDiv.innerHTML = 'Memuat log...';
+        try {
+            let url = '/audit-logs/';
+            if (filter !== 'all') url = `/audit-logs/${filter}`;
+            const logs = await fetchJSON(url);
+            if (logs.length === 0) {
+                logsDiv.innerHTML = '<p>Tidak ada log. Lakukan perubahan konfigurasi pada salah satu device untuk memicu audit log.</p>';
+                return;
+            }
+            let html = '<table class="logs-table"><thead><tr><th>ID</th><th>Actuator ID</th><th>Parameter</th><th>Nilai Lama</th><th>Nilai Baru</th><th>Waktu</th></tr></thead><tbody>';
+            for (const l of logs) {
+                html += `<tr>
+                    <td>${l.id_log}</td>
+                    <td>${l.actuator_id.substring(0,8)}...</td>
+                    <td>${l.parameter_yang_diubah}</td>
+                    <td>${l.nilai_lama ?? '-'}</td>
+                    <td>${l.nilai_baru ?? '-'}</td>
+                    <td>${new Date(l.waktu_perubahan).toLocaleString()}</td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            logsDiv.innerHTML = html;
+        } catch (err) {
+            console.error('loadLogs error:', err);
+            logsDiv.innerHTML = '<p>Gagal memuat log. Periksa koneksi.</p>';
+        }
+    }
+
+    // Event binding for buttons
+    function bindEvents() {
+        document.getElementById('btnAddKandang').onclick = () => addKandang();
+        document.getElementById('btnAddLantai').onclick = () => addLantai();
+        document.getElementById('btnAddActuator').onclick = () => addActuator();
+        document.getElementById('refreshLogsBtn').onclick = () => refreshLogs();
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadLogs(btn.getAttribute('data-filter'));
+            };
+        });
+    }
+
+    // Initialization
+// Initialization
+async function init() {
+    await loadOptions();
+    await loadHierarchy();
+    await loadLogs('all');
+    bindEvents();
+    // Auto refresh logs only (jangan refresh hierarchy yang punya form input)
+    setInterval(async () => {
+        const activeFilter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+        await loadLogs(activeFilter);
+    }, 5000);
+}
+init();
+    init();
+</script>
+</body>
+</html>
